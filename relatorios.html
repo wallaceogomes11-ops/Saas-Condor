@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EstoqSaaS — Relatórios</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .count-badge {
+      background: var(--amber-glow);
+      color: var(--amber);
+      border: 1px solid rgba(245,166,35,.3);
+      border-radius: 99px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+
+    .search-box { position: relative; }
+    .search-box input { padding-left: 32px; }
+    .search-icon {
+      position: absolute;
+      left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text3);
+      font-size: 13px;
+      pointer-events: none;
+    }
+
+    .col-nome { min-width: 200px; }
+    .col-qtd  { width: 80px; text-align: right; }
+    .col-val  { width: 110px; }
+    .col-lote { width: 90px; }
+    .col-status { width: 110px; }
+
+    .sort-btn {
+      background: none; border: none; cursor: pointer;
+      color: inherit; font: inherit;
+      display: inline-flex; align-items: center; gap: 4px;
+      white-space: nowrap;
+    }
+    .sort-btn:hover { color: var(--amber); }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .pagination-info { font-size: 12px; color: var(--text3); font-family: var(--font-mono); }
+
+    .page-controls { display: flex; gap: 4px; }
+    .page-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text2);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .page-btn:hover { border-color: var(--amber); color: var(--amber); }
+    .page-btn.active { background: var(--amber); color: #0d0f12; border-color: var(--amber); font-weight: 700; }
+    .page-btn:disabled { opacity: .4; cursor: default; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <div id="nav-placeholder"></div>
+
+  <main class="main-content fade-in">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Relatório de Estoque</h1>
+        <p class="page-subtitle">Visualização completa e filtrada dos dados da planilha</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span class="count-badge" id="countBadge">— itens</span>
+        <button class="btn btn-secondary" onclick="loadData(true)">↻ Atualizar</button>
+        <button class="btn btn-primary" onclick="exportCSV()">↓ Exportar CSV</button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="filter-row">
+        <div class="search-box" style="flex:1;min-width:220px">
+          <span class="search-icon">⌕</span>
+          <input class="input" type="text" id="searchInput" placeholder="Buscar por nome, lote, pedido…">
+        </div>
+        <select class="input" id="filterStatus">
+          <option value="">Todos os status</option>
+        </select>
+        <select class="input" id="filterPedido">
+          <option value="">Todos os pedidos</option>
+        </select>
+        <select class="input" id="filterValidade">
+          <option value="">Validade: todos</option>
+          <option value="vencido">Vencido</option>
+          <option value="3dias">Vence em 3 dias</option>
+          <option value="30dias">Vence em 30 dias</option>
+          <option value="ok">OK (> 30 dias)</option>
+          <option value="sem">Sem validade</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters()">✕ Limpar</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div id="tableContainer">
+        <div class="loading-state"><div class="spinner"></div><span>Carregando planilha…</span></div>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </main>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  AUTH.requireAuth();
+  injectNav('relatorios');
+
+  let _data = [];
+  let _filtered = [];
+  let _page = 1;
+  const PAGE_SIZE = 30;
+  let _sortCol = null;
+  let _sortDir = 1;
+
+  async function loadData(force = false) {
+    document.getElementById('tableContainer').innerHTML =
+      '<div class="loading-state"><div class="spinner"></div><span>Carregando…</span></div>';
+    try {
+      _data = await API.fetchData(force);
+      buildFilterOptions();
+      applyFilters();
+      if (force) toast('Dados atualizados!', 'success');
+    } catch(e) {
+      document.getElementById('tableContainer').innerHTML =
+        `<div class="loading-state"><span style="color:var(--red)">Erro: ${e.message}</span></div>`;
+      toast('Erro ao carregar dados', 'error');
+    }
+  }
+
+  function buildFilterOptions() {
+    const statuses = [...new Set(_data.map(d => d.status).filter(Boolean))].sort();
+    const pedidos  = [...new Set(_data.map(d => d.pedido).filter(Boolean))].sort();
+
+    const sel = (id, items) => {
+      const el = document.getElementById(id);
+      const cur = el.value;
+      el.innerHTML = `<option value="">${id==='filterStatus'?'Todos os status':'Todos os pedidos'}</option>` +
+        items.map(v => `<option value="${v}">${v}</option>`).join('');
+      if (cur) el.value = cur;
+    };
+
+    sel('filterStatus', statuses);
+    sel('filterPedido', pedidos);
+  }
+
+  function getValidityBucket(valStr) {
+    if (!valStr) return 'sem';
+    const parts = valStr.split(/[\/\-\.]/);
+    let d;
+    if (parts.length === 3) {
+      d = parts[0].length === 4
+        ? new Date(parts[0], parts[1]-1, parts[2])
+        : new Date(parts[2], parts[1]-1, parts[0]);
+    } else { d = new Date(valStr); }
+    if (isNaN(d.getTime())) return 'sem';
+    const today = new Date(); today.setHours(0,0,0,0); d.setHours(0,0,0,0);
+    const diff = Math.ceil((d - today) / 86400000);
+    if (diff < 0) return 'vencido';
+    if (diff <= 3) return '3dias';
+    if (diff <= 30) return '30dias';
+    return 'ok';
+  }
+
+  function applyFilters() {
+    const q   = document.getElementById('searchInput').value.toLowerCase();
+    const st  = document.getElementById('filterStatus').value;
+    const ped = document.getElementById('filterPedido').value;
+    const val = document.getElementById('filterValidade').value;
+
+    _filtered = _data.filter(d => {
+      if (q && !JSON.stringify(d.raw).toLowerCase().includes(q)) return false;
+      if (st  && d.status !== st)  return false;
+      if (ped && d.pedido !== ped) return false;
+      if (val && getValidityBucket(d.validade) !== val) return false;
+      return true;
+    });
+
+    if (_sortCol) {
+      _filtered.sort((a, b) => {
+        const av = a[_sortCol] || '', bv = b[_sortCol] || '';
+        const an = parseFloat(av), bn = parseFloat(bv);
+        if (!isNaN(an) && !isNaN(bn)) return (an - bn) * _sortDir;
+        return av.localeCompare(bv) * _sortDir;
+      });
+    }
+
+    _page = 1;
+    document.getElementById('countBadge').textContent = `${_filtered.length} itens`;
+    renderTable();
+    renderPagination();
+  }
+
+  function renderTable() {
+    const start = (_page-1) * PAGE_SIZE;
+    const rows  = _filtered.slice(start, start + PAGE_SIZE);
+
+    if (!rows.length) {
+      document.getElementById('tableContainer').innerHTML =
+        '<div class="empty-state"><div class="empty-icon">◫</div><p>Nenhum item encontrado com os filtros aplicados.</p></div>';
+      return;
+    }
+
+    // Detect which columns have data
+    const cols = ['nome','quantidade','validade','lote','pedido','status','local','categoria','observacao'];
+    const visible = cols.filter(c => _data.some(d => d[c]));
+
+    const sortArrow = col => _sortCol===col ? (_sortDir===1?'▲':'▼') : '⇅';
+
+    const thead = visible.map(c => `
+      <th>
+        <button class="sort-btn" onclick="sortBy('${c}')">
+          ${c.toUpperCase()} ${sortArrow(c)}
+        </button>
+      </th>
+    `).join('');
+
+    const tbody = rows.map(row => {
+      const vBucket = getValidityBucket(row.validade);
+      const badges = {
+        vencido: `<span class="badge badge-red">Vencido</span>`,
+        '3dias': `<span class="badge badge-amber">3 dias</span>`,
+        '30dias': `<span class="badge badge-blue">30 dias</span>`,
+        ok:      `<span class="badge badge-green">OK</span>`,
+        sem:     `<span class="badge badge-gray">—</span>`,
+      };
+
+      return `<tr>
+        ${visible.map(c => {
+          if (c === 'validade') return `<td>${row.validade ? row.validade + ' ' + badges[vBucket] : badges['sem']}</td>`;
+          if (c === 'status') return `<td>${row.status ? `<span class="badge badge-gray">${row.status}</span>` : '—'}</td>`;
+          if (c === 'quantidade') return `<td style="text-align:right;font-family:var(--font-mono)">${row.quantidade || '—'}</td>`;
+          return `<td>${row[c] || '—'}</td>`;
+        }).join('')}
+      </tr>`;
+    }).join('');
+
+    document.getElementById('tableContainer').innerHTML = `
+      <div class="table-wrapper">
+        <table>
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function sortBy(col) {
+    if (_sortCol === col) _sortDir *= -1;
+    else { _sortCol = col; _sortDir = 1; }
+    applyFilters();
+  }
+
+  function renderPagination() {
+    const total = Math.ceil(_filtered.length / PAGE_SIZE);
+    const el = document.getElementById('pagination');
+    if (total <= 1) { el.innerHTML = ''; return; }
+
+    const start = (_page-1)*PAGE_SIZE+1;
+    const end   = Math.min(_page*PAGE_SIZE, _filtered.length);
+
+    const pages = [];
+    for (let p = Math.max(1, _page-2); p <= Math.min(total, _page+2); p++) pages.push(p);
+
+    el.innerHTML = `
+      <span class="pagination-info">Mostrando ${start}–${end} de ${_filtered.length}</span>
+      <div class="page-controls">
+        <button class="page-btn" onclick="goPage(${_page-1})" ${_page===1?'disabled':''}>‹</button>
+        ${_page > 3 ? `<button class="page-btn" onclick="goPage(1)">1</button><span style="color:var(--text3);align-self:center">…</span>` : ''}
+        ${pages.map(p => `<button class="page-btn ${p===_page?'active':''}" onclick="goPage(${p})">${p}</button>`).join('')}
+        ${_page < total-2 ? `<span style="color:var(--text3);align-self:center">…</span><button class="page-btn" onclick="goPage(${total})">${total}</button>` : ''}
+        <button class="page-btn" onclick="goPage(${_page+1})" ${_page===total?'disabled':''}>›</button>
+      </div>`;
+  }
+
+  function goPage(p) {
+    const total = Math.ceil(_filtered.length / PAGE_SIZE);
+    if (p < 1 || p > total) return;
+    _page = p;
+    renderTable();
+    renderPagination();
+    document.querySelector('.main-content').scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterPedido').value = '';
+    document.getElementById('filterValidade').value = '';
+    _sortCol = null; _sortDir = 1;
+    applyFilters();
+  }
+
+  function exportCSV() {
+    if (!_filtered.length) return toast('Nenhum dado para exportar', 'warning');
+    const keys = Object.keys(_filtered[0].raw);
+    const rows = [keys.join(','), ..._filtered.map(d => keys.map(k => `"${(d.raw[k]||'').replace(/"/g,'""')}"`).join(','))];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `estoque_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    toast('CSV exportado!', 'success');
+  }
+
+  // Event listeners
+  ['searchInput','filterStatus','filterPedido','filterValidade'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener(id==='searchInput' ? 'input' : 'change', () => applyFilters());
+  });
+
+  loadData();
+</script>
+</body>
+</html>

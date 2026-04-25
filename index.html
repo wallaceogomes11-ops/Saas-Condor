@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EstoqSaaS — Login</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    /* Animated grid background */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(245,166,35,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245,166,35,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    .bg-glow {
+      position: fixed;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(245,166,35,.08) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .login-card {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      padding: 48px 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg), 0 0 80px rgba(245,166,35,.06);
+      animation: fadeIn .5s ease;
+      z-index: 1;
+    }
+
+    .login-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .login-logo .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 12px var(--amber);
+    }
+
+    .login-tagline {
+      color: var(--text3);
+      font-size: 13px;
+      margin-bottom: 36px;
+    }
+
+    .form-group { margin-bottom: 18px; }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 7px;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 14px;
+      font-family: var(--font-body);
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .form-input:focus {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px rgba(245,166,35,.12);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 13px;
+      background: var(--amber);
+      color: #0d0f12;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--font-head);
+      letter-spacing: .5px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 8px;
+    }
+
+    .btn-login:hover {
+      background: #f0b840;
+      box-shadow: 0 0 24px rgba(245,166,35,.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-login:active { transform: none; }
+
+    .login-error {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid rgba(240,82,82,.3);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .login-hints {
+      margin-top: 28px;
+      padding: 14px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .hint-title {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .hint-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 4px;
+    }
+
+    .hint-cred { font-family: var(--font-mono); color: var(--amber); }
+
+    .version-tag {
+      position: absolute;
+      bottom: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--text3);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="dot"></div>
+      <span>Estoq<span style="color:var(--amber)">SaaS</span></span>
+    </div>
+    <p class="login-tagline">Sistema de Controle de Estoque • v1.0</p>
+
+    <div class="form-group">
+      <label class="form-label" for="username">Usuário</label>
+      <input class="form-input" type="text" id="username" placeholder="admin" autocomplete="username">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="password">Senha</label>
+      <input class="form-input" type="password" id="password" placeholder="••••••" autocomplete="current-password">
+    </div>
+
+    <button class="btn-login" id="loginBtn">Entrar no sistema</button>
+
+    <div class="login-error" id="loginError">
+      ✕ Usuário ou senha incorretos.
+    </div>
+
+    <div class="login-hints">
+      <div class="hint-title">Credenciais de demonstração</div>
+      <div class="hint-row">
+        <span>Administrador</span>
+        <span class="hint-cred">admin / 1234</span>
+      </div>
+      <div class="hint-row">
+        <span>Operador</span>
+        <span class="hint-cred">user / 1234</span>
+      </div>
+    </div>
+
+    <div class="version-tag">EstoqSaaS • Google Sheets powered</div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script>
+    // Already logged in?
+    if (AUTH.getSession()) window.location.href = 'dashboard.html';
+
+    const form = {
+      username: document.getElementById('username'),
+      password: document.getElementById('password'),
+      btn:      document.getElementById('loginBtn'),
+      error:    document.getElementById('loginError'),
+    };
+
+    function doLogin() {
+      const u = form.username.value.trim();
+      const p = form.password.value;
+      if (!u || !p) { form.error.style.display = 'block'; form.error.textContent = '✕ Preencha todos os campos.'; return; }
+
+      form.btn.textContent = 'Autenticando…';
+      form.btn.disabled = true;
+
+      setTimeout(() => {
+        const session = AUTH.login(u, p);
+        if (session) {
+          form.btn.textContent = '✓ Bem-vindo, ' + session.name;
+          setTimeout(() => window.location.href = 'dashboard.html', 500);
+        } else {
+          form.error.style.display = 'block';
+          form.error.textContent = '✕ Usuário ou senha incorretos.';
+          form.btn.textContent = 'Entrar no sistema';
+          form.btn.disabled = false;
+          form.password.value = '';
+          form.password.focus();
+        }
+      }, 600);
+    }
+
+    form.btn.addEventListener('click', doLogin);
+    [form.username, form.password].forEach(el =>
+      el.addEventListener('keydown', e => e.key === 'Enter' && doLogin())
+    );
+  </script>
+</body>
+</html>
