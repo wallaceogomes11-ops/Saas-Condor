@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ferramentas · EstoqueFlow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<style>
+:root{
+  --bg:#f0f4fa;--surface:#fff;--surface-2:#f7f9fd;--surface-3:#eef2f9;
+  --border:#e1e8f5;--border-2:#d5dff0;
+  --txt:#0f172a;--txt-2:#475569;--txt-3:#94a3b8;
+  --accent:#2563eb;--accent-h:#1d4ed8;--accent-bg:#eff6ff;
+  --red:#ef4444;--red-bg:#fef2f2;--amber:#f59e0b;--amber-bg:#fffbeb;
+  --green:#10b981;--green-bg:#ecfdf5;--purple:#8b5cf6;--purple-bg:#f5f3ff;
+  --sh-sm:0 1px 3px rgba(15,23,42,.07);--sh-md:0 4px 20px rgba(15,23,42,.09);
+  --r:16px;--r-sm:10px;--r-xs:7px;--font:'Poppins',sans-serif;--dur:.22s;
+  --sidebar:220px;--topbar:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+#shell{display:grid;grid-template-rows:var(--topbar) 1fr;grid-template-columns:var(--sidebar) 1fr;height:100vh}
+#topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 22px;box-shadow:var(--sh-sm);z-index:50}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.brand-mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#2563eb,#0ea5e9);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(37,99,235,.35)}
+.brand-mark svg{fill:#fff;width:18px;height:18px}
+.brand-name{font-size:15px;font-weight:800;letter-spacing:-.5px}
+.brand-name em{font-style:normal;color:var(--accent)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+#user-pill{display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);font-size:12px;color:var(--txt-2);cursor:pointer}
+.user-avatar{width:22px;height:22px;border-radius:6px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent)}
+#nav-sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:12px 10px 24px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.nav-section-lbl{font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--txt-3);padding:10px 8px 4px;margin-top:4px}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-sm);font-size:12.5px;font-weight:500;color:var(--txt-2);text-decoration:none;transition:all var(--dur);cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.nav-link:hover{background:var(--surface-2);color:var(--txt)}
+.nav-link.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.nav-link svg{width:15px;height:15px;fill:currentColor;flex-shrink:0;opacity:.75}
+.nav-link.active svg{opacity:1}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-sm);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;border:none;transition:all var(--dur);white-space:nowrap;line-height:1}
+.btn svg{width:14px;height:14px;fill:currentColor;flex-shrink:0}
+.btn-accent{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3)}
+.btn-accent:hover{background:var(--accent-h);transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--txt-2);border:1.5px solid var(--border)}
+.btn-outline:hover{background:var(--surface-2);color:var(--txt)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#059669;transform:translateY(-1px)}
+.btn-amber{background:var(--amber);color:#fff}.btn-amber:hover{background:#d97706;transform:translateY(-1px)}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{background:#dc2626;transform:translateY(-1px)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn:active{transform:translateY(0)!important}
+@keyframes spin{to{transform:rotate(360deg)}}
+.anim-spin{animation:spin .7s linear infinite}
+#main{overflow-y:auto;overflow-x:hidden;padding:20px;display:flex;flex-direction:column;gap:18px;scrollbar-width:thin}
+.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.page-title{font-size:18px;font-weight:800;color:var(--txt);letter-spacing:-.3px}
+.page-sub{font-size:13px;color:var(--txt-3);margin-top:3px}
+
+/* TOOL TABS */
+.tabs{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:var(--r-xs);font-size:12.5px;font-weight:600;color:var(--txt-2);cursor:pointer;border:none;background:transparent;transition:all var(--dur);display:flex;align-items:center;gap:6px}
+.tab svg{width:13px;height:13px;fill:currentColor;opacity:.75}
+.tab:hover{background:var(--surface);color:var(--txt)}
+.tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--sh-sm)}
+.tab.active svg{opacity:1}
+.tab-panel{display:none}.tab-panel.active{display:flex;flex-direction:column;gap:16px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-sm)}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.card-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-icon svg{width:17px;height:17px}
+.card-icon.blue{background:var(--accent-bg)}.card-icon.blue svg{fill:var(--accent)}
+.card-icon.red{background:var(--red-bg)}.card-icon.red svg{fill:var(--red)}
+.card-icon.green{background:var(--green-bg)}.card-icon.green svg{fill:var(--green)}
+.card-icon.amber{background:var(--amber-bg)}.card-icon.amber svg{fill:var(--amber)}
+.card-icon.purple{background:var(--purple-bg)}.card-icon.purple svg{fill:var(--purple)}
+.card-title{font-size:13.5px;font-weight:700;color:var(--txt)}
+.card-sub-text{font-size:11.5px;color:var(--txt-3);margin-top:1px}
+.card-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.card-actions{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
+
+/* KPI MINI ROW */
+.kpi-mini-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.kpi-mini{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi-mini-lbl{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-3)}
+.kpi-mini-val{font-size:22px;font-weight:800;line-height:1;letter-spacing:-1px}
+.kpi-mini-sub{font-size:11px;color:var(--txt-3)}
+.kpi-mini.red .kpi-mini-val{color:var(--red)}
+.kpi-mini.amber .kpi-mini-val{color:var(--amber)}
+.kpi-mini.green .kpi-mini-val{color:var(--green)}
+.kpi-mini.blue .kpi-mini-val{color:var(--accent)}
+.kpi-mini.purple .kpi-mini-val{color:var(--purple)}
+
+/* INSIGHT ITEMS */
+.insight-list{display:flex;flex-direction:column;gap:10px}
+.insight-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface-2);transition:background var(--dur)}
+.insight-item:hover{background:var(--surface)}
+.insight-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.insight-icon.red{background:var(--red-bg)}
+.insight-icon.amber{background:var(--amber-bg)}
+.insight-icon.green{background:var(--green-bg)}
+.insight-icon.blue{background:var(--accent-bg)}
+.insight-title{font-size:13px;font-weight:600;color:var(--txt)}
+.insight-desc{font-size:12px;color:var(--txt-3);margin-top:2px;line-height:1.5}
+.insight-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:auto;flex-shrink:0;align-self:flex-start;margin-top:2px}
+.insight-badge.red{background:var(--red-bg);color:var(--red);border:1px solid #fca5a5}
+.insight-badge.amber{background:var(--amber-bg);color:#92400e;border:1px solid #fcd34d}
+.insight-badge.green{background:var(--green-bg);color:#065f46;border:1px solid #6ee7b7}
+
+/* ERROR TABLE */
+.err-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.err-tbl th{background:var(--surface-2);padding:8px 12px;text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-3);border-bottom:1px solid var(--border)}
+.err-tbl td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.err-tbl tr:last-child td{border-bottom:none}
+.err-tbl tr:hover td{background:var(--surface-2)}
+.err-tag{display:inline-block;padding:2px 7px;border-radius:99px;font-size:10.5px;font-weight:700}
+.err-tag.e-empty{background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5}
+.err-tag.e-date{background:#fffbeb;color:#92400e;border:1px solid #fcd34d}
+.err-tag.e-dup{background:var(--purple-bg);color:#5b21b6;border:1px solid #c4b5fd}
+.err-tag.e-miss{background:var(--sky-bg,#f0f9ff);color:#0c4a6e;border:1px solid #7dd3fc}
+.tbl-wrap{overflow:auto;max-height:320px;border:1px solid var(--border);border-radius:var(--r-sm);scrollbar-width:thin}
+
+/* HEALTH METER */
+.health-bar-wrap{display:flex;flex-direction:column;gap:8px}
+.health-bar-outer{height:12px;background:var(--surface-3);border-radius:99px;overflow:hidden}
+.health-bar-inner{height:100%;border-radius:99px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.health-score{font-size:36px;font-weight:800;letter-spacing:-2px}
+.health-label{font-size:12px;color:var(--txt-3);margin-top:2px}
+
+/* CALCULATOR */
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.calc-field{display:flex;flex-direction:column;gap:4px}
+.calc-label{font-size:11.5px;font-weight:600;color:var(--txt-2)}
+.calc-input{padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-xs);font-family:var(--font);font-size:13px;color:var(--txt);background:var(--surface-2);outline:none;transition:border-color var(--dur)}
+.calc-input:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.calc-result{background:var(--accent-bg);border:1px solid #bfdbfe;border-radius:var(--r-sm);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+.calc-result-lbl{font-size:12px;color:var(--accent);font-weight:600}
+.calc-result-val{font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-1px}
+
+/* STATE */
+.state-box{text-align:center;padding:36px 16px;color:var(--txt-3);font-size:13px}
+.state-box .ico{font-size:36px;display:block;margin-bottom:12px}
+.loading-row{display:flex;align-items:center;gap:10px;padding:20px;color:var(--txt-3);font-size:13px;justify-content:center}
+.spinner{width:20px;height:20px;border:2px solid var(--border-2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+
+/* TOAST */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--txt);color:#fff;padding:12px 18px;border-radius:var(--r-sm);font-size:13px;font-weight:500;box-shadow:var(--sh-md);animation:toastIn .3s ease;pointer-events:all;display:flex;align-items:center;gap:8px}
+.toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.warning{background:var(--amber)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast.fade-out{animation:toastOut .3s ease forwards}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateX(20px)}}
+
+/* REPORT */
+.report-section{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:10px}
+.report-section-title{font-size:12px;font-weight:700;color:var(--txt-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.report-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12.5px}
+.report-row-lbl{color:var(--txt-2)}
+.report-row-val{font-weight:700;color:var(--txt)}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div id="shell">
+<header id="topbar">
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M20 8.94a1.07 1.07 0 0 0-.06-.27l-.09-.2-6-5.71a1 1 0 0 0-.09-.07 1 1 0 0 0-1.25 0l-.09.07-6 5.71a.68.68 0 0 0-.09.2 1.1 1.1 0 0 0-.06.27A1 1 0 0 0 6 9v10a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1V9a1 1 0 0 0 0-.06z"/></svg></div>
+    <span class="brand-name">Estoque<em>Flow</em></span>
+  </div>
+  <div class="top-right">
+    <div id="user-pill" onclick="Auth.logout()">
+      <div class="user-avatar" id="user-av">U</div>
+      <span id="user-name">—</span>
+    </div>
+  </div>
+</header>
+
+<nav id="nav-sidebar">
+  <div class="nav-section-lbl">Menu</div>
+  <a class="nav-link" href="dashboard.html"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</a>
+  <a class="nav-link" href="relatorios.html"><svg viewBox="0 0 24 24"><path d="M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4zm2.5 2.1h-15V5h15v14.1zm0-16.1h-15c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>Relatórios</a>
+  <a class="nav-link" href="etiquetas.html"><svg viewBox="0 0 24 24"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z"/></svg>Etiquetas</a>
+  <div class="nav-section-lbl">Ferramentas</div>
+  <a class="nav-link active" href="ferramentas.html"><svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>Ferramentas</a>
+  <div class="nav-section-lbl">Sistema</div>
+  <a class="nav-link" href="admin.html" id="nav-admin" style="display:none"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>Admin</a>
+  <button class="nav-link" onclick="Auth.logout()"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>Sair</button>
+</nav>
+
+<main id="main">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">🔧 Ferramentas Inteligentes</div>
+      <div class="page-sub">Análise avançada, diagnóstico e relatórios do estoque</div>
+    </div>
+    <button class="btn btn-accent" id="btn-load" onclick="loadAll()">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      <span id="btn-load-txt">Carregar Dados</span>
+    </button>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('validador')" id="tab-validador">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      Validador
+    </button>
+    <button class="tab" onclick="switchTab('insights')" id="tab-insights">
+      <svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+      Insights
+    </button>
+    <button class="tab" onclick="switchTab('inconsistencias')" id="tab-inconsistencias">
+      <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+      Inconsistências
+    </button>
+    <button class="tab" onclick="switchTab('diagnostico')" id="tab-diagnostico">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+      Diagnóstico
+    </button>
+    <button class="tab" onclick="switchTab('calculadora')" id="tab-calculadora">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+      Calculadora
+    </button>
+    <button class="tab" onclick="switchTab('relatorio')" id="tab-relatorio">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8v-2zm0-4h8v2H8v-2z"/></svg>
+      Relatório
+    </button>
+  </div>
+
+  <!-- TAB: VALIDADOR -->
+  <div class="tab-panel active" id="panel-validador">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon green"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <div><div class="card-title">Validador de Dados</div><div class="card-sub-text">Detecta campos obrigatórios faltando, datas inválidas e linhas em branco</div></div>
+      </div>
+      <div class="card-body">
+        <div id="validador-state"><div class="state-box"><span class="ico">🔍</span>Clique em "Carregar Dados" para iniciar a validação.</div></div>
+        <div id="validador-kpis" class="kpi-mini-row" style="display:none"></div>
+        <div id="validador-tbl-wrap" style="display:none">
+          <div class="tbl-wrap">
+            <table class="err-tbl"><thead><tr><th>#</th><th>Endereço</th><th>Microsiga</th><th>Pedido</th><th>Problema</th></tr></thead>
+            <tbody id="validador-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: INSIGHTS -->
+  <div class="tab-panel" id="panel-insights">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon amber"><svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg></div>
+        <div><div class="card-title">Análise de Estoque + Insights</div><div class="card-sub-text">Padrões automáticos, alertas de vencimento e estoque parado</div></div>
+      </div>
+      <div class="card-body">
+        <div id="insights-state"><div class="state-box"><span class="ico">💡</span>Clique em "Carregar Dados" para gerar insights.</div></div>
+        <div id="insights-list" class="insight-list" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: INCONSISTÊNCIAS -->
+  <div class="tab-panel" id="panel-inconsistencias">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon red"><svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div>
+        <div><div class="card-title">Detecção de Inconsistências</div><div class="card-sub-text">Duplicatas, dados incompletos e valores fora do padrão</div></div>
+      </div>
+      <div class="card-body">
+        <div id="incons-state"><div class="state-box"><span class="ico">⚠️</span>Clique em "Carregar Dados" para detectar inconsistências.</div></div>
+        <div id="incons-content" style="display:none;flex-direction:column;gap:14px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: DIAGNÓSTICO -->
+  <div class="tab-panel" id="panel-diagnostico">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon purple"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+        <div><div class="card-title">Diagnóstico do Sistema</div><div class="card-sub-text">Saúde da planilha, nível de confiabilidade e indicadores gerais</div></div>
+      </div>
+      <div class="card-body">
+        <div id="diag-state"><div class="state-box"><span class="ico">🩺</span>Clique em "Carregar Dados" para gerar o diagnóstico.</div></div>
+        <div id="diag-content" style="display:none;flex-direction:column;gap:16px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: CALCULADORA -->
+  <div class="tab-panel" id="panel-calculadora">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V7h8v2z"/></svg></div>
+        <div><div class="card-title">Calculadora de Estoque</div><div class="card-sub-text">Calcule capacidade, giro e estimativas de estoque</div></div>
+      </div>
+      <div class="card-body">
+        <div class="calc-grid">
+          <div class="calc-field">
+            <label class="calc-label">Endereços Ocupados</label>
+            <input class="calc-input" type="number" id="c-ocupados" value="0" oninput="calcular()"/>
+          </div>
+          <div class="calc-field">
+            <label class="calc-label">Capacidade Total</label>
+            <input class="calc-input" type="number" id="c-capacidade" value="394" oninput="calcular()"/>
+          </div>
+          <div class="calc-field">
+            <label class="calc-label">Itens Vencidos</label>
+            <input class="calc-input" type="number" id="c-vencidos" value="0" oninput="calcular()"/>
+          </div>
+          <div class="calc-field">
+            <label class="calc-label">Total de Itens</label>
+            <input class="calc-input" type="number" id="c-total" value="0" oninput="calcular()"/>
+          </div>
+          <div class="calc-field">
+            <label class="calc-label">Itens Cancelados</label>
+            <input class="calc-input" type="number" id="c-cancelados" value="0" oninput="calcular()"/>
+          </div>
+          <div class="calc-field">
+            <label class="calc-label">Meta Giro (dias)</label>
+            <input class="calc-input" type="number" id="c-meta-giro" value="30" oninput="calcular()"/>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="calc-result">
+            <span class="calc-result-lbl">Taxa de Ocupação</span>
+            <span class="calc-result-val" id="r-ocupacao">0%</span>
+          </div>
+          <div class="calc-result" style="background:var(--red-bg);border-color:#fca5a5">
+            <span class="calc-result-lbl" style="color:var(--red)">% Vencidos</span>
+            <span class="calc-result-val" style="color:var(--red)" id="r-vencidos-pct">0%</span>
+          </div>
+          <div class="calc-result" style="background:var(--green-bg);border-color:#6ee7b7">
+            <span class="calc-result-lbl" style="color:var(--green)">Endereços Livres</span>
+            <span class="calc-result-val" style="color:var(--green)" id="r-livres">394</span>
+          </div>
+          <div class="calc-result" style="background:var(--amber-bg);border-color:#fcd34d">
+            <span class="calc-result-lbl" style="color:#92400e">Índice de Saúde</span>
+            <span class="calc-result-val" style="color:#92400e" id="r-saude">—</span>
+          </div>
+        </div>
+        <button class="btn btn-outline" onclick="preencherDadosReais()">
+          <svg viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+          Preencher com dados reais
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: RELATÓRIO -->
+  <div class="tab-panel" id="panel-relatorio">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8v-2zm0-4h8v2H8v-2z"/></svg></div>
+        <div><div class="card-title">Gerador de Relatório</div><div class="card-sub-text">Relatório completo com resumo, alertas e inconsistências</div></div>
+      </div>
+      <div class="card-body">
+        <div id="report-preview"><div class="state-box"><span class="ico">📄</span>Clique em "Carregar Dados" e depois gere o relatório.</div></div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-accent" onclick="gerarRelatorio()">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+          Gerar Relatório
+        </button>
+        <button class="btn btn-green" onclick="enviarWhatsApp()" id="btn-wpp" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M16.75 13.96c.25.13.41.2.46.3.06.11.04.61-.21 1.18-.2.56-1.24 1.1-1.7 1.12-.46.02-.47.36-2.96-.73-2.49-1.09-3.99-3.75-4.11-3.92-.12-.17-.96-1.38-.92-2.61.05-1.22.69-1.8.95-2.04.24-.26.51-.29.68-.26h.47c.15 0 .36-.06.55.45l.69 1.87c.06.13.1.28.01.44l-.27.41-.39.42c-.12.12-.26.25-.12.5.12.26.62 1.09 1.32 1.78.91.88 1.71 1.17 1.95 1.3.24.14.39.12.54-.04l.81-.94c.19-.25.35-.19.58-.11l1.67.88z M12 2C6.36 2 1.92 6.5 2 12.16c.04 1.91.52 3.7 1.36 5.26L2 22l4.75-1.29C8.3 21.56 10.12 22 12 22c5.64 0 10-4.5 10-10S17.64 2 12 2zm0 18c-1.7 0-3.29-.46-4.67-1.25l-.33-.2-3.45.94.93-3.36-.22-.35A7.99 7.99 0 0 1 4 12c0-4.42 3.58-8 8-8s8 3.58 8 8-3.58 8-8 8z"/></svg>
+          Compartilhar WhatsApp
+        </button>
+        <button class="btn btn-outline" onclick="enviarEmail()" id="btn-email" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          Enviar por E-mail
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+var DATA = [];
+var analysisCache = null;
+
+// ─── Auth ──────────────────────────────────────
+const session = Auth.require();
+if(session){
+  document.getElementById('user-name').textContent = session.name;
+  document.getElementById('user-av').textContent = session.name.charAt(0).toUpperCase();
+  if(session.role==='admin') document.getElementById('nav-admin').style.display='flex';
+}
+
+// ─── Tabs ──────────────────────────────────────
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
+}
+
+// ─── CSV Loader ────────────────────────────────
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRbILRYzVo-Q8guL_4yZUJCJGHCov90qcO_c09w0haXphoDG8Va6UEZyqDIppOLn-N-4WWADRuNtIF7/pub?gid=0&single=true&output=csv';
+function Nk(s){return (s||'').toString().toUpperCase().trim();}
+function esc(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function parseDate(s){
+  if(!s||!s.trim())return null; s=s.trim();
+  let m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  const d=new Date(s);return isNaN(d)?null:d;
+}
+function parseCSV(txt){
+  const rows=[];let row=[],cell='',inQ=false;
+  for(let i=0;i<txt.length;i++){
+    const c=txt[i],nx=txt[i+1];
+    if(inQ){if(c==='"'&&nx==='"'){cell+='"';i++;}else if(c==='"')inQ=false;else cell+=c;}
+    else if(c==='"')inQ=true;
+    else if(c===','){row.push(cell.trim());cell='';}
+    else if(c==='\n'){row.push(cell.trim());cell='';if(row.some(x=>x!=''))rows.push(row);row=[];}
+    else if(c!=='\r')cell+=c;
+  }
+  if(cell||row.length){row.push(cell.trim());if(row.some(x=>x!=''))rows.push(row);}
+  return rows;
+}
+
+async function loadAll(){
+  const btn=document.getElementById('btn-load');const lbl=document.getElementById('btn-load-txt');
+  btn.disabled=true; lbl.textContent='Carregando...';
+  const ico=btn.querySelector('svg');ico.style.animation='spin .7s linear infinite';
+  setAllStates('<div class="loading-row"><div class="spinner"></div>Analisando dados...</div>');
+  try{
+    const res=await fetch(CSV_URL+'&t='+Date.now(),{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const txt=await res.text();
+    const rows=parseCSV(txt);
+    if(rows.length<2)throw new Error('Sem dados');
+    const h=rows[0].map(Nk);
+    const ci=k=>{const i=h.indexOf(k);return i>=0?i:h.findIndex(x=>x.includes(k));};
+    const idx={endereco:ci('ENDER'),microsiga:ci('MICROSIGA'),descricao:ci('DESCRI'),quantidade:ci('QUANTIDADE'),volume:ci('VOLUME'),pedido:ci('PEDIDO'),estado:ci('ESTADO'),lote:ci('LOTE'),dataEntrada:ci('ENTRADA'),validade:ci('VALIDADE'),status:ci('STATUS')};
+    DATA=rows.slice(1).map(r=>({
+      endereco:r[idx.endereco]||'',microsiga:r[idx.microsiga]||'',descricao:r[idx.descricao]||'',
+      quantidade:r[idx.quantidade]||'',volume:r[idx.volume]||'',pedido:r[idx.pedido]||'',
+      estado:r[idx.estado]||'',lote:r[idx.lote]||'',dataEntrada:r[idx.dataEntrada]||'',
+      validade:r[idx.validade]||'',status:r[idx.status]||'',
+    })).filter(d=>d.endereco||d.microsiga||d.status);
+    analysisCache=null;
+    runValidador();runInsights();runInconsistencias();runDiagnostico();
+    showToast('Análise concluída — '+DATA.length+' registros', 'success');
+  }catch(err){
+    setAllStates('<div style="background:var(--red-bg);border:1px solid #fca5a5;border-radius:var(--r-sm);padding:12px 14px;color:#991b1b;font-size:12.5px">❌ Erro: '+err.message+'</div>');
+    showToast('Erro ao carregar dados','error');
+  }finally{
+    btn.disabled=false;lbl.textContent='Atualizar';ico.style.animation='';
+  }
+}
+
+function setAllStates(html){
+  ['validador-state','insights-state','incons-state','diag-state','report-preview'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.innerHTML=html;
+  });
+  document.getElementById('validador-kpis').style.display='none';
+  document.getElementById('validador-tbl-wrap').style.display='none';
+  document.getElementById('insights-list').style.display='none';
+  document.getElementById('incons-content').style.display='none';
+  document.getElementById('diag-content').style.display='none';
+}
+
+// ─── VALIDADOR ────────────────────────────────
+function runValidador(){
+  const erros=[];
+  DATA.forEach((d,i)=>{
+    const row=i+2;
+    if(!d.endereco)erros.push({row,d,tipo:'e-miss',msg:'Endereço vazio'});
+    if(!d.microsiga)erros.push({row,d,tipo:'e-miss',msg:'Microsiga vazio'});
+    if(!d.status)erros.push({row,d,tipo:'e-empty',msg:'Status vazio'});
+    if(d.validade&&!parseDate(d.validade))erros.push({row,d,tipo:'e-date',msg:'Data inválida: '+d.validade});
+    if(d.dataEntrada&&!parseDate(d.dataEntrada))erros.push({row,d,tipo:'e-date',msg:'Data entrada inválida'});
+    if(!d.validade)erros.push({row,d,tipo:'e-miss',msg:'Validade vazia'});
+  });
+  const semEnd=DATA.filter(d=>!d.endereco).length;
+  const semMic=DATA.filter(d=>!d.microsiga).length;
+  const dateInv=DATA.filter(d=>d.validade&&!parseDate(d.validade)).length;
+  const semVal=DATA.filter(d=>!d.validade).length;
+  // KPIs
+  document.getElementById('validador-state').innerHTML='';
+  const kpis=document.getElementById('validador-kpis');
+  kpis.style.display='grid';
+  kpis.innerHTML=`
+    <div class="kpi-mini ${erros.length>0?'red':'green'}">
+      <div class="kpi-mini-lbl">Total de Erros</div>
+      <div class="kpi-mini-val">${erros.length}</div>
+      <div class="kpi-mini-sub">itens com problemas</div>
+    </div>
+    <div class="kpi-mini ${semEnd>0?'amber':'green'}">
+      <div class="kpi-mini-lbl">Sem Endereço</div>
+      <div class="kpi-mini-val">${semEnd}</div>
+      <div class="kpi-mini-sub">campos obrigatórios</div>
+    </div>
+    <div class="kpi-mini ${semMic>0?'amber':'green'}">
+      <div class="kpi-mini-lbl">Sem Microsiga</div>
+      <div class="kpi-mini-val">${semMic}</div>
+      <div class="kpi-mini-sub">código ausente</div>
+    </div>
+    <div class="kpi-mini ${dateInv>0?'red':'green'}">
+      <div class="kpi-mini-lbl">Datas Inválidas</div>
+      <div class="kpi-mini-val">${dateInv}</div>
+      <div class="kpi-mini-sub">formato incorreto</div>
+    </div>
+    <div class="kpi-mini ${semVal>0?'amber':'green'}">
+      <div class="kpi-mini-lbl">Sem Validade</div>
+      <div class="kpi-mini-val">${semVal}</div>
+      <div class="kpi-mini-sub">datas não preenchidas</div>
+    </div>
+    <div class="kpi-mini blue">
+      <div class="kpi-mini-lbl">Total Registros</div>
+      <div class="kpi-mini-val">${DATA.length}</div>
+      <div class="kpi-mini-sub">linhas analisadas</div>
+    </div>`;
+  if(erros.length===0){
+    document.getElementById('validador-tbl-wrap').innerHTML='<div style="background:var(--green-bg);border:1px solid #6ee7b7;border-radius:var(--r-sm);padding:14px 16px;color:#065f46;font-size:13px;font-weight:500;text-align:center">✅ Nenhum erro encontrado. Planilha válida!</div>';
+    document.getElementById('validador-tbl-wrap').style.display='block';
+    return;
+  }
+  const tblWrap=document.getElementById('validador-tbl-wrap');tblWrap.style.display='block';
+  document.getElementById('validador-tbody').innerHTML=erros.slice(0,200).map(e=>`
+    <tr><td style="color:var(--txt-3)">${e.row}</td>
+    <td>${esc(e.d.endereco)||'—'}</td>
+    <td>${esc(e.d.microsiga)||'—'}</td>
+    <td>${esc(e.d.pedido)||'—'}</td>
+    <td><span class="err-tag ${e.tipo}">${esc(e.msg)}</span></td>
+    </tr>`).join('');
+}
+
+// ─── INSIGHTS ─────────────────────────────────
+function runInsights(){
+  const now=new Date();const oya=new Date(now.getFullYear()-1,now.getMonth(),now.getDate());
+  const in3=new Date(now.getTime()+3*24*60*60*1000);const in30=new Date(now.getTime()+30*24*60*60*1000);
+  const insights=[];
+  // 1 near expiry
+  const near3=DATA.filter(d=>{const v=parseDate(d.validade);return v&&v>now&&v<=in3;});
+  if(near3.length)insights.push({type:'red',icon:'⏰',title:'Vencimento Iminente',desc:`${near3.length} ite${near3.length!==1?'ns':'m'} vence${near3.length!==1?'m':''} nos próximos 3 dias: ${[...new Set(near3.map(d=>d.pedido).filter(Boolean))].slice(0,3).join(', ')}`,badge:near3.length,badgeType:'red'});
+  // 2 next 30 days
+  const near30=DATA.filter(d=>{const v=parseDate(d.validade);return v&&v>in3&&v<=in30;});
+  if(near30.length)insights.push({type:'amber',icon:'📅',title:'Vencimento nos Próximos 30 Dias',desc:`${near30.length} ite${near30.length!==1?'ns':'m'} vence${near30.length!==1?'m':''} em até 30 dias. Planeje a separação.`,badge:near30.length,badgeType:'amber'});
+  // 3 vencidos > 1 ano
+  const venc1=DATA.filter(d=>{const v=parseDate(d.validade);return v&&v<oya;});
+  if(venc1.length)insights.push({type:'red',icon:'⚠️',title:'Vencidos há mais de 1 Ano',desc:`${venc1.length} ite${venc1.length!==1?'ns':'m'} expirado${venc1.length!==1?'s':''} há mais de um ano. Considere descarte imediato.`,badge:venc1.length,badgeType:'red'});
+  // 4 cancelled items
+  const canc=DATA.filter(d=>Nk(d.status)==='CANCELADO');
+  if(canc.length>10)insights.push({type:'amber',icon:'🚫',title:'Itens Cancelados em Estoque',desc:`${canc.length} ite${canc.length!==1?'ns':'m'} com status CANCELADO. Esses itens ocupam ${new Set(canc.map(d=>d.endereco).filter(Boolean)).size} endereços.`,badge:canc.length,badgeType:'amber'});
+  // 5 high occupation
+  const uniq=new Set(DATA.map(d=>Nk(d.endereco)).filter(Boolean)).size;
+  const pct=(uniq/394)*100;
+  if(pct>85)insights.push({type:'amber',icon:'📦',title:`Ocupação Elevada (${pct.toFixed(0)}%)`,desc:`Estoque com ${uniq} de 394 endereços ocupados. Capacidade crítica acima de 85%.`,badge:pct.toFixed(0)+'%',badgeType:'amber'});
+  // 6 missing status
+  const semStatus=DATA.filter(d=>!d.status||d.status.trim()==='').length;
+  if(semStatus>0)insights.push({type:'amber',icon:'❓',title:'Itens sem Status Definido',desc:`${semStatus} ite${semStatus!==1?'ns':'m'} sem status. Dificulta relatórios e análises.`,badge:semStatus,badgeType:'amber'});
+  // 7 good news
+  const ativos=DATA.filter(d=>Nk(d.status)==='ATIVO').length;
+  if(ativos>0)insights.push({type:'green',icon:'✅',title:'Itens Ativos',desc:`${ativos} ite${ativos!==1?'ns':'m'} com status ATIVO no estoque — ${((ativos/DATA.length)*100).toFixed(1)}% da base.`,badge:ativos,badgeType:'green'});
+
+  document.getElementById('insights-state').innerHTML='';
+  const list=document.getElementById('insights-list');list.style.display='flex';
+  if(!insights.length){list.innerHTML='<div class="state-box"><span class="ico">🎉</span>Nenhum insight crítico encontrado. Estoque aparentemente saudável!</div>';return;}
+  list.innerHTML=insights.map(i=>`
+    <div class="insight-item">
+      <div class="insight-icon ${i.type}">${i.icon}</div>
+      <div style="flex:1">
+        <div class="insight-title">${i.title}</div>
+        <div class="insight-desc">${i.desc}</div>
+      </div>
+      <span class="insight-badge ${i.badgeType}">${i.badge}</span>
+    </div>`).join('');
+}
+
+// ─── INCONSISTÊNCIAS ──────────────────────────
+function runInconsistencias(){
+  // Duplicatas por endereço + microsiga
+  const seen={};const dups=[];
+  DATA.forEach((d,i)=>{const key=Nk(d.endereco)+'|'+Nk(d.microsiga);if(seen[key]!==undefined){dups.push({idx1:seen[key],idx2:i,d});}else{seen[key]=i;}});
+  // Valores de volume fora do padrão
+  const volumes=DATA.map(d=>parseFloat((d.volume||'').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))).filter(v=>!isNaN(v)&&v>0);
+  const avgVol=volumes.length?volumes.reduce((a,b)=>a+b,0)/volumes.length:0;
+  const stdVol=volumes.length?Math.sqrt(volumes.map(v=>(v-avgVol)**2).reduce((a,b)=>a+b,0)/volumes.length):0;
+  const outliers=DATA.filter(d=>{const v=parseFloat((d.volume||'').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''));return !isNaN(v)&&v>0&&Math.abs(v-avgVol)>3*stdVol;});
+  // Endereços sem pedido
+  const semPedido=DATA.filter(d=>d.endereco&&!d.pedido).length;
+
+  document.getElementById('incons-state').innerHTML='';
+  const cont=document.getElementById('incons-content');cont.style.display='flex';
+  cont.innerHTML=`
+    <div class="kpi-mini-row">
+      <div class="kpi-mini ${dups.length>0?'red':'green'}">
+        <div class="kpi-mini-lbl">Duplicatas</div>
+        <div class="kpi-mini-val">${dups.length}</div>
+        <div class="kpi-mini-sub">endereço+código duplicado</div>
+      </div>
+      <div class="kpi-mini ${outliers.length>0?'amber':'green'}">
+        <div class="kpi-mini-lbl">Volumes Atípicos</div>
+        <div class="kpi-mini-val">${outliers.length}</div>
+        <div class="kpi-mini-sub">acima de 3σ da média</div>
+      </div>
+      <div class="kpi-mini ${semPedido>0?'amber':'green'}">
+        <div class="kpi-mini-lbl">Sem Pedido</div>
+        <div class="kpi-mini-val">${semPedido}</div>
+        <div class="kpi-mini-sub">endereços sem pedido</div>
+      </div>
+    </div>
+    ${dups.length>0?`
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--txt-2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Itens Duplicados (${Math.min(dups.length,50)} de ${dups.length})</div>
+      <div class="tbl-wrap">
+        <table class="err-tbl">
+          <thead><tr><th>Endereço</th><th>Microsiga</th><th>Pedido</th><th>Status</th><th>Tipo</th></tr></thead>
+          <tbody>${dups.slice(0,50).map(e=>`<tr><td>${esc(e.d.endereco)}</td><td>${esc(e.d.microsiga)}</td><td>${esc(e.d.pedido)}</td><td>${esc(e.d.status)}</td><td><span class="err-tag e-dup">Duplicata</span></td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`:''}
+    ${outliers.length>0?`
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--txt-2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Volumes Fora do Padrão (média: ${avgVol.toFixed(1)})</div>
+      <div class="tbl-wrap">
+        <table class="err-tbl">
+          <thead><tr><th>Endereço</th><th>Microsiga</th><th>Pedido</th><th>Volume</th><th>Tipo</th></tr></thead>
+          <tbody>${outliers.slice(0,30).map(d=>`<tr><td>${esc(d.endereco)}</td><td>${esc(d.microsiga)}</td><td>${esc(d.pedido)}</td><td style="font-weight:700;color:var(--amber)">${esc(d.volume)}</td><td><span class="err-tag e-date">Atípico</span></td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`:''}`;
+}
+
+// ─── DIAGNÓSTICO ──────────────────────────────
+function runDiagnostico(){
+  const total=DATA.length;
+  const comEnd=DATA.filter(d=>d.endereco).length;
+  const comMic=DATA.filter(d=>d.microsiga).length;
+  const comVal=DATA.filter(d=>d.validade).length;
+  const comSts=DATA.filter(d=>d.status).length;
+  const dateOk=DATA.filter(d=>d.validade&&parseDate(d.validade)).length;
+  const score=total>0?Math.round(((comEnd+comMic+comVal+comSts+dateOk)/(total*5))*100):0;
+  const scoreColor=score>=80?'var(--green)':score>=60?'var(--amber)':'var(--red)';
+  const scoreLabel=score>=80?'Excelente':score>=60?'Regular':'Crítico';
+  document.getElementById('diag-state').innerHTML='';
+  const cont=document.getElementById('diag-content');cont.style.display='flex';
+  cont.innerHTML=`
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <div class="health-score" style="color:${scoreColor}">${score}%</div>
+        <div class="health-label">Índice de Saúde da Planilha — ${scoreLabel}</div>
+        <div class="health-bar-wrap" style="margin-top:10px">
+          <div class="health-bar-outer">
+            <div class="health-bar-inner" style="width:${score}%;background:${scoreColor}"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;flex:2;min-width:280px">
+        ${[
+          ['Total de Registros',total,'blue'],
+          ['Com Endereço',comEnd,comEnd===total?'green':'amber'],
+          ['Com Microsiga',comMic,comMic===total?'green':'amber'],
+          ['Com Validade',comVal,comVal===total?'green':'amber'],
+          ['Com Status',comSts,comSts===total?'green':'amber'],
+          ['Datas Válidas',dateOk,dateOk===comVal?'green':'amber'],
+        ].map(([lbl,val,c])=>`
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;font-size:12.5px;color:var(--txt-2)">${lbl}</div>
+            <div style="font-size:12.5px;font-weight:700;color:var(--${c})">${val}</div>
+            <div style="font-size:11px;color:var(--txt-3)">${total>0?((val/total)*100).toFixed(1)+'%':''}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:4px">
+      ${[
+        ['Registros com todos os campos','#',score>=80?'green':score>=60?'amber':'red'],
+        ['Status mais comum',DATA.length?getMostCommon(DATA.map(d=>d.status)):'—','blue'],
+        ['Pedido com mais itens',DATA.length?getMostCommon(DATA.map(d=>d.pedido).filter(Boolean)):'—','purple'],
+        ['Endereços únicos',''+new Set(DATA.map(d=>d.endereco).filter(Boolean)).size,'blue'],
+      ].map(([lbl,val,c])=>`
+        <div class="report-section">
+          <div class="report-section-title">${lbl}</div>
+          <div style="font-size:16px;font-weight:800;color:var(--${c})">${val}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function getMostCommon(arr){if(!arr.length)return'—';const cnt={};arr.forEach(v=>{if(v)cnt[v]=(cnt[v]||0)+1;});return Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';}
+
+// ─── CALCULADORA ──────────────────────────────
+function calcular(){
+  const ocp=parseFloat(document.getElementById('c-ocupados').value)||0;
+  const cap=parseFloat(document.getElementById('c-capacidade').value)||394;
+  const venc=parseFloat(document.getElementById('c-vencidos').value)||0;
+  const total=parseFloat(document.getElementById('c-total').value)||0;
+  const canc=parseFloat(document.getElementById('c-cancelados').value)||0;
+  const livres=Math.max(0,cap-ocp);
+  const pctOcp=cap>0?(ocp/cap*100).toFixed(1)+'%':'—';
+  const pctVenc=total>0?(venc/total*100).toFixed(1)+'%':'—';
+  const saudePts=[];
+  if(cap>0){const o=ocp/cap;saudePts.push(o<0.9?100:o<1?60:20);}
+  if(total>0){const v=venc/total;saudePts.push(v<0.05?100:v<0.15?60:20);}
+  if(total>0){const c=canc/total;saudePts.push(c<0.1?100:c<0.25?60:20);}
+  const saude=saudePts.length?Math.round(saudePts.reduce((a,b)=>a+b,0)/saudePts.length)+'%':'—';
+  document.getElementById('r-ocupacao').textContent=pctOcp;
+  document.getElementById('r-vencidos-pct').textContent=pctVenc;
+  document.getElementById('r-livres').textContent=livres;
+  document.getElementById('r-saude').textContent=saude;
+}
+function preencherDadosReais(){
+  if(!DATA.length){showToast('Carregue os dados primeiro.','warning');return;}
+  const uniq=new Set(DATA.map(d=>Nk(d.endereco)).filter(Boolean)).size;
+  const now=new Date();const oya=new Date(now.getFullYear()-1,now.getMonth(),now.getDate());
+  const venc=DATA.filter(d=>{const v=parseDate(d.validade);return v&&v<oya;}).length;
+  const canc=DATA.filter(d=>Nk(d.status)==='CANCELADO').length;
+  document.getElementById('c-ocupados').value=uniq;
+  document.getElementById('c-total').value=DATA.length;
+  document.getElementById('c-vencidos').value=venc;
+  document.getElementById('c-cancelados').value=canc;
+  calcular();
+  showToast('Dados reais preenchidos!','success');
+}
+
+// ─── RELATÓRIO ────────────────────────────────
+var reportText='';
+function gerarRelatorio(){
+  if(!DATA.length){showToast('Carregue os dados primeiro.','warning');return;}
+  const now=new Date();
+  const oya=new Date(now.getFullYear()-1,now.getMonth(),now.getDate());
+  const in30=new Date(now.getTime()+30*24*60*60*1000);
+  const total=DATA.length;
+  const venc1=DATA.filter(d=>{const v=parseDate(d.validade);return v&&v<oya;}).length;
+  const near30=DATA.filter(d=>{const v=parseDate(d.validade);return v&&v>now&&v<=in30;}).length;
+  const canc=DATA.filter(d=>Nk(d.status)==='CANCELADO').length;
+  const uniq=new Set(DATA.map(d=>Nk(d.endereco)).filter(Boolean)).size;
+  const semVal=DATA.filter(d=>!d.validade).length;
+  const semMic=DATA.filter(d=>!d.microsiga).length;
+  const score=total>0?Math.round(((DATA.filter(d=>d.endereco).length+DATA.filter(d=>d.microsiga).length+DATA.filter(d=>d.validade).length+DATA.filter(d=>d.status).length)/(total*4))*100):0;
+  const seen={};let dups=0;DATA.forEach(d=>{const k=Nk(d.endereco)+'|'+Nk(d.microsiga);if(seen[k])dups++;else seen[k]=true;});
+  reportText=`EstoqueFlow — Relatório de Diagnóstico
+Gerado em: ${now.toLocaleString('pt-BR')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESUMO GERAL
+• Total de registros: ${total}
+• Endereços únicos ocupados: ${uniq} / 394 (${((uniq/394)*100).toFixed(1)}%)
+• Índice de saúde: ${score}%
+
+ALERTAS CRÍTICOS
+• Vencidos há +1 ano: ${venc1} itens
+• Vencimentos em 30 dias: ${near30} itens
+• Itens cancelados: ${canc} itens
+
+INCONSISTÊNCIAS DETECTADAS
+• Sem microsiga: ${semMic} registros
+• Sem validade: ${semVal} registros
+• Duplicatas detectadas: ${dups} registros
+
+RECOMENDAÇÕES
+${venc1>0?'⚠ Realizar descarte dos '+venc1+' itens vencidos há +1 ano.\n':''}${near30>0?'📅 Planejar separação de '+near30+' itens que vencem em 30 dias.\n':''}${canc>0?'🚫 Revisar '+canc+' itens cancelados que ocupam espaço.\n':''}${dups>0?'🔁 Verificar '+dups+' possíveis duplicatas na planilha.\n':''}${score>=80?'✅ Planilha com boa qualidade de dados.':'⚠ Recomenda-se higienização dos dados da planilha.'}`;
+  document.getElementById('report-preview').innerHTML=`
+    <div class="report-section">
+      <div class="report-section-title">Resumo Geral</div>
+      <div class="report-row"><span class="report-row-lbl">Total de registros</span><span class="report-row-val">${total}</span></div>
+      <div class="report-row"><span class="report-row-lbl">Ocupação</span><span class="report-row-val">${uniq} / 394 (${((uniq/394)*100).toFixed(1)}%)</span></div>
+      <div class="report-row"><span class="report-row-lbl">Índice de saúde</span><span class="report-row-val" style="color:${score>=80?'var(--green)':score>=60?'var(--amber)':'var(--red)'}">${score}%</span></div>
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Alertas</div>
+      <div class="report-row"><span class="report-row-lbl">Vencidos +1 ano</span><span class="report-row-val" style="color:var(--red)">${venc1}</span></div>
+      <div class="report-row"><span class="report-row-lbl">Vencendo em 30 dias</span><span class="report-row-val" style="color:var(--amber)">${near30}</span></div>
+      <div class="report-row"><span class="report-row-lbl">Cancelados</span><span class="report-row-val" style="color:var(--purple)">${canc}</span></div>
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Inconsistências</div>
+      <div class="report-row"><span class="report-row-lbl">Sem Microsiga</span><span class="report-row-val">${semMic}</span></div>
+      <div class="report-row"><span class="report-row-lbl">Sem Validade</span><span class="report-row-val">${semVal}</span></div>
+      <div class="report-row"><span class="report-row-lbl">Duplicatas</span><span class="report-row-val">${dups}</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--txt-3);text-align:center">Gerado em ${now.toLocaleString('pt-BR')}</div>`;
+  document.getElementById('btn-wpp').style.display='inline-flex';
+  document.getElementById('btn-email').style.display='inline-flex';
+  showToast('Relatório gerado!','success');
+}
+function enviarWhatsApp(){
+  if(!reportText){showToast('Gere o relatório primeiro.','warning');return;}
+  window.open('https://wa.me/?text='+encodeURIComponent(reportText),'_blank');
+}
+function enviarEmail(){
+  if(!reportText){showToast('Gere o relatório primeiro.','warning');return;}
+  window.location.href='mailto:?subject='+encodeURIComponent('EstoqueFlow — Relatório de Diagnóstico')+'&body='+encodeURIComponent(reportText);
+}
+
+// ─── Toast ─────────────────────────────────────
+function showToast(msg,type='info',duration=3000){
+  let c=document.getElementById('toast-container');
+  const t=document.createElement('div');t.className='toast '+type;t.textContent=msg;c.appendChild(t);
+  setTimeout(()=>{t.classList.add('fade-out');setTimeout(()=>t.remove(),300);},duration);
+}
+
+calcular();
+</script>
+</body>
+</html>
