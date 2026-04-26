@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Etiquetas · EstoqueFlow</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<style>
+:root{
+  --bg:#f0f4fa;--surface:#ffffff;--surface-2:#f7f9fd;--surface-3:#eef2f9;
+  --border:#e1e8f5;--border-2:#d5dff0;
+  --txt:#0f172a;--txt-2:#475569;--txt-3:#94a3b8;
+  --accent:#2563eb;--accent-h:#1d4ed8;--accent-bg:#eff6ff;
+  --red:#ef4444;--red-bg:#fef2f2;--amber:#f59e0b;--amber-bg:#fffbeb;
+  --green:#10b981;--green-bg:#ecfdf5;
+  --sh-sm:0 1px 3px rgba(15,23,42,.07);--sh-md:0 4px 20px rgba(15,23,42,.09);
+  --r:16px;--r-sm:10px;--r-xs:7px;--font:'Poppins',sans-serif;--dur:.22s;
+  --sidebar:220px;--topbar:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+#shell{display:grid;grid-template-rows:var(--topbar) 1fr;grid-template-columns:var(--sidebar) 1fr;height:100vh}
+#topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 22px;box-shadow:var(--sh-sm);z-index:50}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.brand-mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#2563eb 0%,#0ea5e9 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(37,99,235,.35)}
+.brand-mark svg{fill:#fff;width:18px;height:18px}
+.brand-name{font-size:15px;font-weight:800;letter-spacing:-.5px;color:var(--txt)}
+.brand-name em{font-style:normal;color:var(--accent)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+#user-pill{display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);font-size:12px;color:var(--txt-2);cursor:pointer}
+.user-avatar{width:22px;height:22px;border-radius:6px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent)}
+
+#nav-sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:12px 10px 24px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.nav-section-lbl{font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--txt-3);padding:10px 8px 4px;margin-top:4px}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-sm);font-size:12.5px;font-weight:500;color:var(--txt-2);text-decoration:none;transition:all var(--dur);cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.nav-link:hover{background:var(--surface-2);color:var(--txt)}
+.nav-link.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.nav-link svg{width:15px;height:15px;fill:currentColor;flex-shrink:0;opacity:.75}
+.nav-link.active svg{opacity:1}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-sm);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;border:none;transition:all var(--dur);white-space:nowrap;line-height:1}
+.btn svg{width:14px;height:14px;flex-shrink:0;fill:currentColor}
+.btn-accent{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3)}
+.btn-accent:hover{background:var(--accent-h);transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--txt-2);border:1.5px solid var(--border)}
+.btn-outline:hover{background:var(--surface-2);color:var(--txt)}
+.btn-green{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(16,185,129,.25)}
+.btn-green:hover{background:#059669;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)!important}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#main{overflow-y:auto;overflow-x:hidden;padding:20px;display:flex;flex-direction:column;gap:18px;scrollbar-width:thin}
+.page-title{font-size:18px;font-weight:800;color:var(--txt);letter-spacing:-.3px}
+.page-sub{font-size:13px;color:var(--txt-3);margin-top:3px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-sm)}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.card-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-icon.blue{background:var(--accent-bg)} .card-icon.blue svg{fill:var(--accent)}
+.card-icon.green{background:var(--green-bg)} .card-icon.green svg{fill:var(--green)}
+.card-icon.amber{background:var(--amber-bg)} .card-icon.amber svg{fill:var(--amber)}
+.card-icon svg{width:17px;height:17px}
+.card-title{font-size:13.5px;font-weight:700;color:var(--txt)}
+.card-sub-text{font-size:11.5px;color:var(--txt-3);margin-top:1px}
+.card-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+
+.input-row{display:flex;gap:10px}
+.form-input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--txt);background:var(--surface-2);outline:none;transition:border-color var(--dur),box-shadow var(--dur)}
+.form-input:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.form-input::placeholder{color:var(--txt-3)}
+
+.state-box{text-align:center;padding:28px 16px;color:var(--txt-3);font-size:13px}
+.state-box .ico{font-size:32px;display:block;margin-bottom:10px}
+.msg-ok{background:var(--green-bg);border:1px solid #6ee7b7;border-radius:var(--r-xs);padding:12px 14px;color:#065f46;font-size:12.5px;font-weight:500}
+.msg-err{background:var(--red-bg);border:1px solid #fca5a5;border-radius:var(--r-xs);padding:12px 14px;color:#991b1b;font-size:12.5px}
+.loading-row{display:flex;align-items:center;gap:10px;padding:14px;color:var(--txt-3);font-size:13px}
+.spinner{width:18px;height:18px;border:2px solid var(--border-2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+
+/* Multi-select table */
+.multi-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.multi-tbl th{background:var(--surface-2);padding:8px 12px;text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-3);border-bottom:1px solid var(--border)}
+.multi-tbl td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:middle}
+.multi-tbl tr:last-child td{border-bottom:none}
+.multi-tbl tr:hover td{background:var(--surface-2)}
+.multi-tbl input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
+.tbl-wrap{overflow:auto;max-height:320px;border:1px solid var(--border);border-radius:var(--r-sm);scrollbar-width:thin}
+.sel-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sel-count{font-size:12px;color:var(--txt-3);margin-left:auto}
+
+/* Print-only etiqueta content */
+.etiqueta-wrapper{display:none}
+.etiqueta-end-wrapper{display:none}
+.etiqueta{width:210mm;min-height:297mm;background:#fff;padding:12mm;display:flex;flex-direction:column;color:#1a1a1a;font-family:'DM Sans',Arial,sans-serif}
+.etiqueta-header{display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #E8620A;padding-bottom:7mm;margin-bottom:8mm}
+.etiqueta-header img{height:18mm;object-fit:contain}
+.etiqueta-titulo h1{font-size:18pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif}
+.etiqueta-titulo p{font-size:8pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:2mm}
+.campos{display:flex;flex-direction:column;gap:4mm}
+.campo-bloco{border:1.5px solid #e8e8e8;border-radius:6px;padding:4mm 5mm;background:#fafafa}
+.campo-label{font-size:7pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:2mm}
+.campo-valor{font-size:18pt;font-weight:800;color:#111;line-height:1.1}
+.campo-valor.grande{font-size:28pt}
+.linha-dupla{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+.etiqueta-qr-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:10mm;border-top:3px solid #E8620A;padding-top:8mm;gap:6mm}
+.qr-info{display:flex;gap:16mm;width:100%;justify-content:center;margin-bottom:4mm}
+.qr-info-item p{font-size:7pt;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2mm}
+.qr-info-item strong{font-size:12pt;color:#111;font-weight:700}
+#etiqueta-qrcode{display:flex;justify-content:center}
+#etiqueta-qrcode canvas,#etiqueta-qrcode img{border:3px solid #111;border-radius:6px;padding:3px}
+.qr-label-grande{font-size:8pt;color:#aaa;letter-spacing:2px;text-transform:uppercase;text-align:center}
+
+.etiqueta-end{width:210mm;height:297mm;background:#fff;padding:7mm 11mm 6mm;display:flex;flex-direction:column;color:#1a1a1a;font-family:'DM Sans',Arial,sans-serif;overflow:hidden}
+.etiqueta-end .etiqueta-header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #E8620A;padding-bottom:3mm;margin-bottom:4mm;flex-shrink:0}
+.etiqueta-end .etiqueta-header img{height:13mm;object-fit:contain}
+.etiqueta-end .etiqueta-titulo h1{font-size:13pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif}
+.etiqueta-end .etiqueta-titulo p{font-size:6.5pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm}
+.end-meta{display:flex;gap:3mm;margin-bottom:4mm;flex-shrink:0}
+.end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:5px;padding:2.5mm 4mm;background:#fafafa}
+.end-meta-bloco.destaque{border-color:#E8620A;background:#fff5f0}
+.end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm}
+.end-meta-valor{font-size:12pt;font-weight:800;color:#111;line-height:1.1}
+.end-pedidos-lista{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-around;overflow:hidden}
+.end-linha-div{height:1px;background:#ebebeb;flex-shrink:0}
+.end-pedido-linha{display:flex;flex-direction:row;align-items:center;justify-content:center;flex:1;min-height:0;gap:4mm;font-weight:800;font-family:'Barlow Condensed','Syne',Arial,sans-serif;color:#111;white-space:nowrap;overflow:hidden;line-height:1}
+.end-linha-label{font-weight:700;color:#aaa;letter-spacing:2px;text-transform:uppercase;flex-shrink:0;font-family:'Barlow','DM Sans',Arial,sans-serif}
+.end-linha-ped{font-weight:900;color:#E8620A;font-family:'Barlow Condensed','Syne',Arial,sans-serif;flex-shrink:0;letter-spacing:-0.5px}
+.end-linha-val{font-weight:900;color:#111;font-family:'Barlow Condensed','Syne',Arial,sans-serif;flex-shrink:0}
+.end-linha-sep{color:#ccc;flex-shrink:0;font-family:'Barlow Condensed',Arial,sans-serif}
+.end-rodape{margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;flex-shrink:0}
+.end-rodape-data{font-size:7pt;color:#aaa;letter-spacing:1px}
+.end-rodape-total{font-size:7.5pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase}
+
+@media print{
+  html,body{overflow:visible;height:auto;background:#fff!important}
+  #shell{display:block!important}
+  #topbar,#nav-sidebar,#main{display:none!important}
+  .etiqueta-wrapper{display:block!important}
+  .etiqueta-end-wrapper{display:block!important}
+}
+</style>
+</head>
+<body>
+
+<div id="shell">
+<header id="topbar">
+  <div class="brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M20 8.94a1.07 1.07 0 0 0-.06-.27l-.09-.2-6-5.71a1 1 0 0 0-.09-.07 1 1 0 0 0-1.25 0l-.09.07-6 5.71a.68.68 0 0 0-.09.2 1.1 1.1 0 0 0-.06.27A1 1 0 0 0 6 9v10a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1V9a1 1 0 0 0 0-.06z"/></svg></div>
+    <span class="brand-name">Estoque<em>Flow</em></span>
+  </div>
+  <div class="top-right">
+    <div id="user-pill" onclick="Auth.logout()">
+      <div class="user-avatar" id="user-av">U</div>
+      <span id="user-name">—</span>
+    </div>
+  </div>
+</header>
+
+<nav id="nav-sidebar">
+  <div class="nav-section-lbl">Menu</div>
+  <a class="nav-link" href="dashboard.html">
+    <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+    Dashboard
+  </a>
+  <a class="nav-link" href="relatorios.html">
+    <svg viewBox="0 0 24 24"><path d="M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4zm2.5 2.1h-15V5h15v14.1zm0-16.1h-15c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+    Relatórios
+  </a>
+  <a class="nav-link active" href="etiquetas.html">
+    <svg viewBox="0 0 24 24"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z"/></svg>
+    Etiquetas
+  </a>
+  <div class="nav-section-lbl">Ferramentas</div>
+  <a class="nav-link" href="ferramentas.html">
+    <svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+    Ferramentas
+  </a>
+  <div class="nav-section-lbl">Sistema</div>
+  <a class="nav-link" href="admin.html" id="nav-admin" style="display:none">
+    <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+    Admin
+  </a>
+  <button class="nav-link" onclick="Auth.logout()">
+    <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+    Sair
+  </button>
+</nav>
+
+<main id="main">
+  <div>
+    <div class="page-title">🏷️ Gerador de Etiquetas</div>
+    <div class="page-sub">Gere etiquetas A4 por ID ou por Endereço · Seleção múltipla disponível</div>
+  </div>
+
+  <!-- Card: Gerar por ID -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon blue"><svg viewBox="0 0 24 24"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z"/></svg></div>
+      <div><div class="card-title">Gerar Etiqueta por ID</div><div class="card-sub-text">Busca pelo identificador único do item</div></div>
+    </div>
+    <div class="card-body">
+      <div class="input-row">
+        <input class="form-input" type="text" id="idInputEtiqueta" placeholder="Digite o ID do item..." autocomplete="off" autocapitalize="off"/>
+        <button class="btn btn-accent" id="btn-gerar" onclick="gerarEtiqueta()">
+          <svg viewBox="0 0 24 24"><path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"/></svg>
+          Gerar
+        </button>
+      </div>
+      <div id="painelMsg"><div class="state-box"><span class="ico">🏷️</span>Insira o ID e clique em Gerar.</div></div>
+      <a class="btn btn-accent" id="btnImprimir" href="#" target="_blank" rel="noopener" style="display:none;width:100%;justify-content:center;padding:12px">
+        <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+        Imprimir / Salvar PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Card: Gerar por Endereço -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon green"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>
+      <div><div class="card-title">Gerar Etiqueta por Endereço</div><div class="card-sub-text">Agrupa todos os pedidos do endereço em uma etiqueta A4</div></div>
+    </div>
+    <div class="card-body">
+      <div class="input-row">
+        <input class="form-input" type="text" id="inputEndereco" placeholder="Digite o endereço..." autocomplete="off" autocapitalize="characters"/>
+        <button class="btn btn-green" id="btn-gerar-endereco" onclick="gerarEtiquetaPorEndereco()">
+          <svg viewBox="0 0 24 24"><path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"/></svg>
+          Gerar
+        </button>
+      </div>
+      <div id="painelMsgEndereco"><div class="state-box"><span class="ico">📍</span>Insira o endereço e clique em Gerar.</div></div>
+      <a class="btn btn-green" id="btnImprimirEndereco" href="#" target="_blank" rel="noopener" style="display:none;width:100%;justify-content:center;padding:12px">
+        <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+        Imprimir / Salvar PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Card: Seleção Múltipla -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon amber"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg></div>
+      <div><div class="card-title">Seleção Múltipla de Etiquetas</div><div class="card-sub-text">Busque e selecione vários itens para gerar múltiplas etiquetas</div></div>
+    </div>
+    <div class="card-body">
+      <div class="input-row">
+        <input class="form-input" type="text" id="multiSearch" placeholder="Buscar por endereço, pedido ou microsiga..." oninput="filtrarMulti()"/>
+        <button class="btn btn-outline" onclick="loadMultiData()">
+          <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          Carregar
+        </button>
+      </div>
+      <div id="multiTableWrap" style="display:none">
+        <div class="sel-controls">
+          <button class="btn btn-outline btn-sm" onclick="selectAll(true)">Selecionar Todos</button>
+          <button class="btn btn-outline btn-sm" onclick="selectAll(false)">Desmarcar Todos</button>
+          <span class="sel-count" id="sel-count">0 selecionados</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="multi-tbl">
+            <thead><tr>
+              <th style="width:36px"></th>
+              <th>Endereço</th>
+              <th>Microsiga</th>
+              <th>Descrição</th>
+              <th>Pedido</th>
+              <th>Status</th>
+            </tr></thead>
+            <tbody id="multi-tbody"></tbody>
+          </table>
+        </div>
+        <button class="btn btn-accent" onclick="gerarMultiplas()" style="width:100%;justify-content:center;padding:12px">
+          <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+          Gerar Etiquetas Selecionadas
+        </button>
+      </div>
+      <div id="multiState"><div class="state-box"><span class="ico">📋</span>Clique em Carregar para buscar os dados.</div></div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- Etiqueta por ID (hidden, for print) -->
+<div class="etiqueta-wrapper" id="etiquetaWrapper">
+  <div class="etiqueta">
+    <div class="etiqueta-header">
+      <img id="logoEtiqueta" src="" alt="Logo Condor">
+      <div class="etiqueta-titulo">
+        <h1>Identificação de Palete</h1>
+        <p>Condor Tecnologias Não-Letais</p>
+      </div>
+    </div>
+    <div class="campos">
+      <div class="campo-bloco" style="background:#fff5f0;border-color:#E8620A;">
+        <div class="campo-label">Código MICROSIGA</div>
+        <div class="campo-valor grande" id="el-microsiga">—</div>
+      </div>
+      <div class="campo-bloco">
+        <div class="campo-label">Descrição do Item</div>
+        <div class="campo-valor" id="el-descricao">—</div>
+      </div>
+      <div class="linha-dupla">
+        <div class="campo-bloco"><div class="campo-label">Quantidade</div><div class="campo-valor" id="el-quantidade">—</div></div>
+        <div class="campo-bloco"><div class="campo-label">Validade</div><div class="campo-valor" id="el-validade">—</div></div>
+      </div>
+    </div>
+    <div class="etiqueta-qr-area">
+      <div class="qr-info">
+        <div class="qr-info-item"><p>ID do Palete</p><strong id="el-id">—</strong></div>
+        <div class="qr-info-item"><p>Data de Geração</p><strong id="el-data">—</strong></div>
+      </div>
+      <div id="etiqueta-qrcode"></div>
+      <span class="qr-label-grande">Escaneie para consultar informações do palete</span>
+    </div>
+  </div>
+</div>
+
+<!-- Etiqueta por Endereço (hidden, for print) -->
+<div class="etiqueta-end-wrapper" id="etiquetaEndWrapper">
+  <div class="etiqueta-end" id="etiquetaEndConteudo"></div>
+</div>
+
+<script>
+var SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRbILRYzVo-Q8guL_4yZUJCJGHCov90qcO_c09w0haXphoDG8Va6UEZyqDIppOLn-N-4WWADRuNtIF7/pub?gid=0&single=true&output=csv";
+var SITE_URL  = window.location.origin + window.location.pathname.replace('etiquetas.html','');
+var LOGO_URL  = "https://www.condornaoletal.com.br/themes/custom/condor/logo.svg";
+var CAMPOS = [
+  {col:"MICROSIGA",  label:"Micro Siga", icon:"🏷️"},
+  {col:"Descrição",  label:"Descrição",  icon:"📝"},
+  {col:"Quantidade", label:"Quantidade", icon:"🔢"},
+  {col:"VOLUME",     label:"Volume",     icon:"📦"},
+  {col:"Validade",   label:"Validade",   icon:"📅"},
+  {col:"Status",     label:"Status",     icon:"✅"}
+];
+
+var multiData = [], multiFiltered = [];
+
+// ─── Init ─────────────────────────────────────
+const session = Auth.require();
+if(session){
+  document.getElementById('user-name').textContent = session.name;
+  document.getElementById('user-av').textContent = session.name.charAt(0).toUpperCase();
+  if(session.role==='admin') document.getElementById('nav-admin').style.display='flex';
+}
+
+// ─── CSV Parser ───────────────────────────────
+function parseCSV(text){
+  var lines=text.trim().split("\n"),headers=lines[0].split(",").map(h=>h.replace(/"/g,"").trim()),rows=[];
+  for(var i=1;i<lines.length;i++){
+    var cols=[],cur="",inQ=false;
+    for(var c=0;c<lines[i].length;c++){var ch=lines[i][c];if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){cols.push(cur.trim());cur="";}else{cur+=ch;}}
+    cols.push(cur.trim());
+    var row={};headers.forEach((h,idx)=>row[h]=(cols[idx]||"").replace(/"/g,"").trim());rows.push(row);
+  }
+  return{headers,rows};
+}
+function findField(item,name){var key=Object.keys(item).find(k=>k.toLowerCase().trim()===name.toLowerCase().trim());return key?item[key]:"—";}
+function escapeHTML(str){return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+// ─── Gerar Etiqueta por ID (original, intacto) ───
+function gerarEtiqueta(){
+  var id=document.getElementById("idInputEtiqueta").value.trim();
+  var msg=document.getElementById("painelMsg"),wrap=document.getElementById("etiquetaWrapper"),btnP=document.getElementById("btnImprimir");
+  if(!id){msg.innerHTML='<div class="msg-err">Insira um ID.</div>';return;}
+  msg.innerHTML='<div class="loading-row"><div class="spinner"></div>Buscando na planilha...</div>';
+  wrap.style.display="none";btnP.style.display="none";
+  fetch(SHEET_URL).then(r=>r.text()).then(text=>{
+    var parsed=parseCSV(text);
+    var idCol=parsed.headers.find(h=>h.toLowerCase()==="id");
+    if(!idCol){msg.innerHTML='<div class="msg-err">Coluna ID não encontrada.</div>';return;}
+    var item=parsed.rows.find(r=>(r[idCol]||"").toLowerCase()===id.toLowerCase());
+    if(!item){msg.innerHTML='<div class="msg-err">❌ ID não encontrado: <strong>'+id+'</strong></div>';return;}
+    document.getElementById("el-microsiga").textContent=findField(item,"MICROSIGA")||"—";
+    document.getElementById("el-descricao").textContent=findField(item,"Descrição")||findField(item,"Descricao")||"—";
+    document.getElementById("el-quantidade").textContent=findField(item,"Quantidade")||"—";
+    document.getElementById("el-validade").textContent=findField(item,"Validade")||"—";
+    document.getElementById("el-id").textContent=id.toUpperCase();
+    document.getElementById("el-data").textContent=new Date().toLocaleDateString("pt-BR");
+    document.getElementById("logoEtiqueta").src=LOGO_URL;
+    var qrDiv=document.getElementById("etiqueta-qrcode");qrDiv.innerHTML="";
+    var urlCompleta=SITE_URL+"?id="+encodeURIComponent(id);
+    new QRCode(qrDiv,{text:urlCompleta,width:200,height:200,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});
+    wrap.style.display="block";
+    msg.innerHTML='<div class="msg-ok">✅ Pronto! Clique em <strong>Imprimir</strong> para salvar ou imprimir.</div>';
+    setTimeout(()=>{
+      var estilos=["*{box-sizing:border-box;margin:0;padding:0;}","body{font-family:'DM Sans',Arial,sans-serif;background:#fff;color:#1a1a1a;}",".etiqueta{width:210mm;min-height:297mm;padding:12mm;display:flex;flex-direction:column;}",".etiqueta-header{display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #E8620A;padding-bottom:7mm;margin-bottom:8mm;}",".etiqueta-header img{height:18mm;object-fit:contain;}",".etiqueta-titulo h1{font-size:18pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}",".etiqueta-titulo p{font-size:8pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:2mm;}",".campos{display:flex;flex-direction:column;gap:4mm;}",".campo-bloco{border:1.5px solid #e8e8e8;border-radius:6px;padding:4mm 5mm;background:#fafafa;}",".campo-label{font-size:7pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:2mm;}",".campo-valor{font-size:18pt;font-weight:800;color:#111;line-height:1.1;}",".campo-valor.grande{font-size:28pt;}",".linha-dupla{display:grid;grid-template-columns:1fr 1fr;gap:4mm;}",".etiqueta-qr-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:10mm;border-top:3px solid #E8620A;padding-top:8mm;gap:6mm;}",".qr-info{display:flex;gap:16mm;width:100%;justify-content:center;margin-bottom:4mm;}",".qr-info-item p{font-size:7pt;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2mm;}",".qr-info-item strong{font-size:12pt;color:#111;font-weight:700;}","#etiqueta-qrcode{display:flex;justify-content:center;}","#etiqueta-qrcode canvas,#etiqueta-qrcode img{border:3px solid #111;border-radius:6px;padding:3px;}",".qr-label-grande{font-size:8pt;color:#aaa;letter-spacing:2px;text-transform:uppercase;text-align:center;}","@media print{body{margin:0;}}"].join("");
+      var html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>Palete '+id.toUpperCase()+' - Condor</title><link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet"><style>'+estilos+'</style></head><body>'+document.getElementById("etiquetaWrapper").innerHTML+'<script>window.onload=function(){window.print();}<\/script></body></html>';
+      var blob=new Blob([html],{type:"text/html;charset=utf-8"});
+      btnP.href=URL.createObjectURL(blob);btnP.style.display="inline-flex";
+    },300);
+  }).catch(()=>{msg.innerHTML='<div class="msg-err">❌ Erro ao acessar a planilha.</div>';});
+}
+document.getElementById("idInputEtiqueta").addEventListener("keydown",e=>{if(e.key==="Enter")gerarEtiqueta();});
+
+// ─── Gerar Etiqueta por Endereço (original, intacto) ───
+function gerarEtiquetaPorEndereco(){
+  var endereco=document.getElementById("inputEndereco").value.trim();
+  var msg=document.getElementById("painelMsgEndereco"),btnP=document.getElementById("btnImprimirEndereco");
+  if(!endereco){msg.innerHTML='<div class="msg-err">Insira um endereço.</div>';return;}
+  msg.innerHTML='<div class="loading-row"><div class="spinner"></div>Buscando registros...</div>';
+  btnP.style.display="none";
+  fetch(SHEET_URL).then(r=>r.text()).then(text=>{
+    var parsed=parseCSV(text);
+    var endCol=parsed.headers.find(h=>h.toLowerCase().trim()==="endereço"||h.toLowerCase().trim()==="endereco");
+    if(!endCol){msg.innerHTML='<div class="msg-err">Coluna "ENDEREÇO" não encontrada.</div>';return;}
+    var registros=parsed.rows.filter(r=>(r[endCol]||"").toLowerCase().trim()===endereco.toLowerCase().trim());
+    if(!registros.length){msg.innerHTML='<div class="msg-err">❌ Nenhum registro para: <strong>'+endereco+'</strong></div>';return;}
+    var agrupado={};
+    registros.forEach(r=>{
+      var pedido="";var pedidoKeys=Object.keys(r).filter(k=>k.toLowerCase().trim()==="pedido");
+      if(pedidoKeys.length>0)pedido=(r[pedidoKeys[0]]||"").trim();if(!pedido||pedido==="—")pedido="(sem pedido)";
+      var qtdRaw="";var qtdKeys=Object.keys(r).filter(k=>k.toLowerCase().trim()==="quantidade"||k.toLowerCase().trim()==="qtd");
+      if(qtdKeys.length>0)qtdRaw=(r[qtdKeys[0]]||"").replace(/[^0-9.,]/g,"").replace(",",".");
+      var quantidade=parseFloat(qtdRaw)||0;
+      var volRaw="";var volKeys=Object.keys(r).filter(k=>k.toLowerCase().trim()==="volume"||k.toLowerCase().trim()==="vol");
+      if(volKeys.length>0)volRaw=(r[volKeys[0]]||"").replace(/[^0-9.,]/g,"").replace(",",".");
+      var volume=parseFloat(volRaw)||0;
+      if(!agrupado[pedido])agrupado[pedido]={quantidade:0,volume:0};
+      agrupado[pedido].quantidade+=quantidade;agrupado[pedido].volume+=volume;
+    });
+    var pedidos=Object.keys(agrupado).sort((a,b)=>{var na=parseFloat(a.replace(/[^0-9.]/g,""))||0,nb=parseFloat(b.replace(/[^0-9.]/g,""))||0;return na!==nb?na-nb:a.localeCompare(b);});
+    var itensFinal=pedidos.map(p=>({pedido:p,quantidade:agrupado[p].quantidade,volume:agrupado[p].volume}));
+    var totalQtd=itensFinal.reduce((acc,i)=>acc+i.quantidade,0);
+    var totalVol=itensFinal.reduce((acc,i)=>acc+i.volume,0);
+    var numPedidos=itensFinal.length;
+    var areaUtilMM=230,alturaPorLinhaMM=areaUtilMM/numPedidos;
+    var fonteSizePt=Math.floor(alturaPorLinhaMM*2.835*0.82);
+    if(fonteSizePt>38)fonteSizePt=38;if(fonteSizePt<6)fonteSizePt=6;
+    var fonteLinha=fonteSizePt+"pt",fonteLabel=Math.max(6,Math.floor(fonteSizePt*0.46))+"pt";
+    var blocosHTML=itensFinal.map(item=>'<div class="end-pedido-linha" style="font-size:'+fonteLinha+'"><span class="end-linha-label" style="font-size:'+fonteLabel+'">PED:</span><span class="end-linha-ped">'+escapeHTML(item.pedido)+'</span><span class="end-linha-sep">·</span><span class="end-linha-label" style="font-size:'+fonteLabel+'">QTD:</span><span class="end-linha-val">'+item.quantidade+'</span><span class="end-linha-sep">·</span><span class="end-linha-label" style="font-size:'+fonteLabel+'">VOL:</span><span class="end-linha-val">'+item.volume+'</span></div>').join('<div class="end-linha-div"></div>');
+    var dataGeracao=new Date().toLocaleDateString("pt-BR");
+    var etiquetaHTML='<div class="etiqueta-header"><img src="'+LOGO_URL+'" alt="Condor"/><div class="etiqueta-titulo"><h1>Identificação de Palete</h1><p>Condor Tecnologias Não-Letais</p></div></div><div class="end-meta"><div class="end-meta-bloco destaque" style="flex:2"><div class="end-meta-label">Endereço</div><div class="end-meta-valor">'+escapeHTML(endereco.toUpperCase())+'</div></div><div class="end-meta-bloco"><div class="end-meta-label">Pedidos</div><div class="end-meta-valor">'+numPedidos+'</div></div></div><div class="end-pedidos-lista">'+blocosHTML+'</div><div class="end-rodape"><span class="end-rodape-data">Gerado em '+dataGeracao+'</span><span class="end-rodape-total">Total QTD: '+totalQtd+' · VOL: '+totalVol+'</span></div>';
+    document.getElementById("etiquetaEndConteudo").innerHTML=etiquetaHTML;
+    msg.innerHTML='<div class="msg-ok">✅ '+numPedidos+' pedido(s) agrupado(s). Clique em <strong>Imprimir</strong>.</div>';
+    setTimeout(()=>{
+      var estilosEnd=["*{box-sizing:border-box;margin:0;padding:0;}","@page{size:A4 portrait;margin:0;}","html{width:210mm;height:297mm;overflow:hidden;}","body{font-family:'Barlow','DM Sans',Arial,sans-serif;background:#fff;color:#1a1a1a;width:210mm;height:297mm;overflow:hidden;}",".etiqueta-end{width:210mm;height:297mm;background:#fff;padding:6mm 10mm 5mm;display:flex;flex-direction:column;overflow:hidden;}",".etiqueta-header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #E8620A;padding-bottom:2.5mm;margin-bottom:3mm;flex-shrink:0;}",".etiqueta-header img{height:11mm;object-fit:contain;}",".etiqueta-titulo h1{font-size:11pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Barlow Condensed',Arial,sans-serif;letter-spacing:1.5px;}",".etiqueta-titulo p{font-size:5.5pt;color:#bbb;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm;}",".end-meta{display:flex;gap:3mm;margin-bottom:3mm;flex-shrink:0;}",".end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:4px;padding:2mm 4mm;background:#fafafa;}",".end-meta-bloco.destaque{border-color:#E8620A;background:#fff5f0;}",".end-meta-label{font-size:5.5pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm;}",".end-meta-valor{font-size:11pt;font-weight:800;color:#111;line-height:1;font-family:'Barlow Condensed',Arial,sans-serif;}",".end-pedidos-lista{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-around;overflow:hidden;}",".end-linha-div{height:0.5px;background:#e0e0e0;flex-shrink:0;}",".end-pedido-linha{display:flex;flex-direction:row;align-items:center;justify-content:center;flex:1;min-height:0;gap:5mm;font-family:'Barlow Condensed',Arial,sans-serif;font-weight:800;color:#111;white-space:nowrap;overflow:hidden;line-height:1;}",".end-linha-label{font-family:'Barlow',Arial,sans-serif;font-weight:700;color:#bbb;letter-spacing:2px;text-transform:uppercase;flex-shrink:0;}",".end-linha-ped{font-family:'Barlow Condensed',Arial,sans-serif;font-weight:900;color:#E8620A;flex-shrink:0;}",".end-linha-val{font-family:'Barlow Condensed',Arial,sans-serif;font-weight:900;color:#111;flex-shrink:0;}",".end-linha-sep{color:#ddd;flex-shrink:0;}",".end-rodape{margin-top:2.5mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2mm;flex-shrink:0;}",".end-rodape-data{font-size:6pt;color:#bbb;letter-spacing:1px;}",".end-rodape-total{font-size:6.5pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}","@media print{html,body{overflow:hidden;}}"].join("");
+      var htmlDoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>Endereço '+escapeHTML(endereco.toUpperCase())+' - Condor</title><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+estilosEnd+'</style></head><body><div class="etiqueta-end">'+document.getElementById("etiquetaEndConteudo").innerHTML+'</div><script>window.onload=function(){window.print();}<\/script></body></html>';
+      var blob=new Blob([htmlDoc],{type:"text/html;charset=utf-8"});
+      btnP.href=URL.createObjectURL(blob);btnP.style.display="inline-flex";
+    },200);
+  }).catch(()=>{msg.innerHTML='<div class="msg-err">❌ Erro ao acessar a planilha.</div>';});
+}
+document.getElementById("inputEndereco").addEventListener("keydown",e=>{if(e.key==="Enter")gerarEtiquetaPorEndereco();});
+
+// ─── Seleção Múltipla ──────────────────────────
+function loadMultiData(){
+  document.getElementById('multiState').innerHTML='<div class="loading-row"><div class="spinner"></div>Carregando dados da planilha...</div>';
+  fetch(SHEET_URL).then(r=>r.text()).then(text=>{
+    var parsed=parseCSV(text);
+    multiData=parsed.rows.filter(r=>Object.values(r).some(v=>v.trim()));
+    multiFiltered=[...multiData];
+    renderMultiTable();
+    document.getElementById('multiTableWrap').style.display='flex';
+    document.getElementById('multiTableWrap').style.flexDirection='column';
+    document.getElementById('multiTableWrap').style.gap='10px';
+    document.getElementById('multiState').innerHTML='';
+  }).catch(()=>{document.getElementById('multiState').innerHTML='<div class="msg-err">❌ Erro ao carregar dados.</div>';});
+}
+
+function filtrarMulti(){
+  var q=document.getElementById('multiSearch').value.toLowerCase().trim();
+  multiFiltered=q?multiData.filter(r=>{
+    var endCol=Object.keys(r).find(k=>k.toLowerCase().includes('ender'));
+    var pedCol=Object.keys(r).find(k=>k.toLowerCase()==='pedido');
+    var micCol=Object.keys(r).find(k=>k.toLowerCase().includes('microsiga'));
+    return [(r[endCol]||''),(r[pedCol]||''),(r[micCol]||'')].some(v=>v.toLowerCase().includes(q));
+  }):[...multiData];
+  renderMultiTable();
+}
+
+function renderMultiTable(){
+  var tbody=document.getElementById('multi-tbody');
+  tbody.innerHTML=multiFiltered.slice(0,200).map((r,i)=>{
+    var endCol=Object.keys(r).find(k=>k.toLowerCase().includes('ender'))||'';
+    var micCol=Object.keys(r).find(k=>k.toLowerCase().includes('microsiga'))||'';
+    var descCol=Object.keys(r).find(k=>k.toLowerCase().includes('descri'))||'';
+    var pedCol=Object.keys(r).find(k=>k.toLowerCase()==='pedido')||'';
+    var stCol=Object.keys(r).find(k=>k.toLowerCase()==='status')||'';
+    return `<tr><td><input type="checkbox" class="multi-cb" data-idx="${i}" onchange="updateSelCount()"/></td><td>${escapeHTML(r[endCol]||'')}</td><td>${escapeHTML(r[micCol]||'')}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${escapeHTML(r[descCol]||'')}</td><td>${escapeHTML(r[pedCol]||'')}</td><td>${escapeHTML(r[stCol]||'')}</td></tr>`;
+  }).join('');
+  updateSelCount();
+}
+
+function selectAll(val){
+  document.querySelectorAll('.multi-cb').forEach(cb=>cb.checked=val);
+  updateSelCount();
+}
+
+function updateSelCount(){
+  var sel=document.querySelectorAll('.multi-cb:checked').length;
+  document.getElementById('sel-count').textContent=sel+' selecionado'+(sel!==1?'s':'');
+}
+
+function gerarMultiplas(){
+  var selected=[];
+  document.querySelectorAll('.multi-cb:checked').forEach(cb=>{
+    var idx=parseInt(cb.dataset.idx);
+    if(multiFiltered[idx]) selected.push(multiFiltered[idx]);
+  });
+  if(!selected.length){alert('Selecione ao menos um item.');return;}
+  var estilos=["*{box-sizing:border-box;margin:0;padding:0;}","@page{size:A4 portrait;margin:12mm;}","body{font-family:'DM Sans',Arial,sans-serif;background:#fff;color:#1a1a1a;}",".etiqueta{width:100%;page-break-after:always;display:flex;flex-direction:column;min-height:270mm;}",".etiqueta-header{display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #E8620A;padding-bottom:7mm;margin-bottom:8mm;}",".etiqueta-titulo h1{font-size:18pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}",".etiqueta-titulo p{font-size:8pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:2mm;}",".campos{display:flex;flex-direction:column;gap:4mm;}",".campo-bloco{border:1.5px solid #e8e8e8;border-radius:6px;padding:4mm 5mm;background:#fafafa;}",".campo-label{font-size:7pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:2mm;}",".campo-valor{font-size:18pt;font-weight:800;color:#111;line-height:1.1;}",".campo-valor.grande{font-size:28pt;}",".linha-dupla{display:grid;grid-template-columns:1fr 1fr;gap:4mm;}",".info-footer{margin-top:auto;padding-top:8mm;border-top:3px solid #E8620A;display:flex;justify-content:space-between;align-items:center;}",".info-footer-label{font-size:7pt;color:#aaa;letter-spacing:2px;text-transform:uppercase;}",".info-footer-val{font-size:12pt;font-weight:700;color:#111;}"].join("");
+  var blocosHTML=selected.map(r=>{
+    var micCol=Object.keys(r).find(k=>k.toLowerCase().includes('microsiga'))||'';
+    var descCol=Object.keys(r).find(k=>k.toLowerCase().includes('descri'))||'';
+    var qtdCol=Object.keys(r).find(k=>k.toLowerCase().includes('quantidade'))||'';
+    var valCol=Object.keys(r).find(k=>k.toLowerCase().includes('validade'))||'';
+    var pedCol=Object.keys(r).find(k=>k.toLowerCase()==='pedido')||'';
+    return '<div class="etiqueta"><div class="etiqueta-header"><div class="etiqueta-titulo"><h1>Identificação de Palete</h1><p>Condor Tecnologias Não-Letais</p></div></div><div class="campos"><div class="campo-bloco" style="background:#fff5f0;border-color:#E8620A"><div class="campo-label">Código MICROSIGA</div><div class="campo-valor grande">'+escapeHTML(r[micCol]||'—')+'</div></div><div class="campo-bloco"><div class="campo-label">Descrição do Item</div><div class="campo-valor">'+escapeHTML(r[descCol]||'—')+'</div></div><div class="linha-dupla"><div class="campo-bloco"><div class="campo-label">Quantidade</div><div class="campo-valor">'+escapeHTML(r[qtdCol]||'—')+'</div></div><div class="campo-bloco"><div class="campo-label">Validade</div><div class="campo-valor">'+escapeHTML(r[valCol]||'—')+'</div></div></div></div><div class="info-footer"><div><div class="info-footer-label">Pedido</div><div class="info-footer-val">'+escapeHTML(r[pedCol]||'—')+'</div></div><div><div class="info-footer-label">Gerado em</div><div class="info-footer-val">'+new Date().toLocaleDateString('pt-BR')+'</div></div></div></div>';
+  }).join('');
+  var html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>Etiquetas Múltiplas - Condor</title><link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet"><style>'+estilos+'</style></head><body>'+blocosHTML+'<script>window.onload=function(){window.print();}<\/script></body></html>';
+  var blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  window.open(URL.createObjectURL(blob),'_blank');
+}
+</script>
+</body>
+</html>
